@@ -85,11 +85,13 @@ class PhotosCollection: NSObject {
 extension PhotosCollection: PHPhotoLibraryChangeObserver {
     
     func photoLibraryDidChange(_ changeInstance: PHChange) {
-        DispatchQueue.main.sync {
-            if let changeDetails = changeInstance.changeDetails(for: fetchResult!) {
-                fetchResult = changeDetails.fetchResultAfterChanges
-                NotificationCenter.default.post(name: fetchResultChangedNotification,
-                                                object: nil)
+        if (fetchResult != nil) {
+            DispatchQueue.main.sync {
+                if let changeDetails = changeInstance.changeDetails(for: fetchResult!) {
+                    fetchResult = changeDetails.fetchResultAfterChanges
+                    NotificationCenter.default.post(name: fetchResultChangedNotification,
+                                                    object: nil)
+                }
             }
         }
     }
