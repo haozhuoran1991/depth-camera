@@ -40,10 +40,11 @@
                                             <action selector="shutterBtnPressed:" destination="BYZ-38-t0r" eventType="touchUpInside" id="ZGg-tR-uAC"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" preservesSuperviewLayoutMargins="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="VfZ-ls-sDy">
+                                    <button opaque="NO" contentMode="scaleAspectFit" fixedFrame="YES" preservesSuperviewLayoutMargins="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="VfZ-ls-sDy">
                                         <rect key="frame" x="8" y="12" width="45" height="45"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMinY="YES"/>
                                         <color key="backgroundColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <state key="normal" backgroundImage="emptyFolder"/>
                                         <connections>
                                             <segue destination="Rt3-HE-99n" kind="popoverPresentation" popoverAnchorView="VfZ-ls-sDy" id="iv0-3O-0NT">
                                                 <popoverArrowDirection key="popoverArrowDirection" up="YES" down="YES" left="YES" right="YES"/>
@@ -189,4 +190,7 @@
             <point key="canvasLocation" x="3292.753623188406" y="129.61956521739131"/>
         </scene>
     </scenes>
+    <resources>
+        <image name="emptyFolder" width="28" height="28"/>
+    </resources>
 </document>
