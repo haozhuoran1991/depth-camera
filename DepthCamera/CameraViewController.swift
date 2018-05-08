@@ -98,9 +98,11 @@ class CameraViewController: UIViewController {
     @objc private func updateThumbnailOfShowPhotosButton() {
         if let asset = photos.result?.lastObject {
             let thumb = PhotosCollection.getAssetThumbnail(asset)
-            showPhotos.setImage(thumb, for: .normal)
+            showPhotos.setBackgroundImage(thumb, for: .normal)
+            showPhotos.isEnabled = true
         } else {
-            // TODO: Use a default image of empty folder or something similar
+            showPhotos.setBackgroundImage(#imageLiteral(resourceName: "emptyFolder"), for: .normal)
+            showPhotos.isEnabled = false
         }
     }
     
