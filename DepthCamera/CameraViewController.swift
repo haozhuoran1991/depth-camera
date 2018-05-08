@@ -8,6 +8,7 @@
 
 import UIKit
 import AVFoundation
+import Photos
 
 class CameraViewController: UIViewController {
 
@@ -16,16 +17,23 @@ class CameraViewController: UIViewController {
     @IBOutlet fileprivate weak var shutterBtn: UIButton!
     @IBOutlet weak var topView: UIView!
     @IBOutlet weak var buttomView: UIView!
+    @IBOutlet weak var showPhotos: UIButton!
     
     // MARK: Properties
     private let cameraController = CameraController()
     private let locationAuthorization = LocationAuthorization()
     private var focusSquare: CameraFocusSquare?
     private var volumeHandler: JPSVolumeButtonHandler?
+    private let photos = PhotosCollection()
     
     // MARK: - View Controller Life cycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(updateThumbnailOfShowPhotosButton),
+                                               name: fetchResultChangedNotification,
+                                               object: nil)
         
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(orientationChanged(_:)),
@@ -43,6 +51,7 @@ class CameraViewController: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        updateThumbnailOfShowPhotosButton()
         
         // Using a 3r-party lib to have control over of the volume button to use it as a shutter button
         self.volumeHandler = JPSVolumeButtonHandler(up: {
@@ -55,6 +64,7 @@ class CameraViewController: UIViewController {
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+
         if !locationAuthorization.isLocationServicesEnabled {
             locationAuthorization.enableBasicLocationServices()
         }
@@ -82,6 +92,16 @@ class CameraViewController: UIViewController {
     private func captureImage() {
         self.cameraController.createAlbum()
         self.cameraController.captureImage()
+    }
+    
+    // add a thumbnail to the showPhotos button
+    @objc private func updateThumbnailOfShowPhotosButton() {
+        if let asset = photos.result?.lastObject {
+            let thumb = PhotosCollection.getAssetThumbnail(asset)
+            showPhotos.setImage(thumb, for: .normal)
+        } else {
+            // TODO: Use a default image of empty folder or something similar
+        }
     }
     
     // MARK: View Stuff

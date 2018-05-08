@@ -62,6 +62,7 @@
                     <connections>
                         <outlet property="buttomView" destination="CPT-ub-ryr" id="d4m-MJ-UM8"/>
                         <outlet property="preview" destination="nfb-FU-drd" id="EgQ-mj-Gjl"/>
+                        <outlet property="showPhotos" destination="VfZ-ls-sDy" id="m5u-HL-Vny"/>
                         <outlet property="shutterBtn" destination="Wbs-Xi-TrO" id="Igu-TJ-zeH"/>
                         <outlet property="topView" destination="tha-kV-PXd" id="pOZ-dE-lo9"/>
                     </connections>

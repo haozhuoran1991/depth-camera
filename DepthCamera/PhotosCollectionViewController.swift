@@ -10,20 +10,22 @@ import UIKit
 import Photos
 
 private let reuseIdentifier = "ThumbCell"
+public let fetchResultChangedNotification = Notification.Name.init(rawValue: "FetchResultChangedForDepthDataApp")
 
 struct ImageFromAsset {
     var image: UIImage
     var imageData: Data
 }
 
-class PhotosCollection {
-    
+class PhotosCollection: NSObject {
     private var fetchResult: PHFetchResult<PHAsset>?
     var result:  PHFetchResult<PHAsset>? {
         return fetchResult
     }
     
-    init() {
+    override init() {
+        super.init()
+        PHPhotoLibrary.shared().register(self)
         let fetchOptions = PHFetchOptions()
         fetchOptions.sortDescriptors = [NSSortDescriptor.init(key: "creationDate", ascending: true)]
         
@@ -38,6 +40,7 @@ class PhotosCollection {
     
     deinit {
         fetchResult = nil
+        PHPhotoLibrary.shared().unregisterChangeObserver(self)
     }
     
     static func getAssetThumbnail(_ asset: PHAsset) -> UIImage {
@@ -75,6 +78,20 @@ class PhotosCollection {
         })
         
         return ImageFromAsset(image: image, imageData: imageData)
+    }
+}
+
+// MARK: - PHPhotoLibraryChangeObserver
+extension PhotosCollection: PHPhotoLibraryChangeObserver {
+    
+    func photoLibraryDidChange(_ changeInstance: PHChange) {
+        DispatchQueue.main.sync {
+            if let changeDetails = changeInstance.changeDetails(for: fetchResult!) {
+                fetchResult = changeDetails.fetchResultAfterChanges
+                NotificationCenter.default.post(name: fetchResultChangedNotification,
+                                                object: nil)
+            }
+        }
     }
 }
 
