@@ -30,28 +30,44 @@ class CameraViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(updateThumbnailOfShowPhotosButton),
-                                               name: fetchResultChangedNotification,
-                                               object: nil)
+        // Check if the access to the camera is granted
+        CameraAuthorization.checkCameraAuthorization({ granted in
+            if granted {
+                self.cameraController.prepare()
+                self.cameraController.displayPreview(on: self.preview)
+                
+                // Just start to get the user location if the usar has granted access to the camera
+                if !self.locationAuthorization.isLocationServicesEnabled {
+                    self.locationAuthorization.enableBasicLocationServices()
+                }
+                
+                NotificationCenter.default.addObserver(self,
+                                                       selector: #selector(self.orientationChanged(_:)),
+                                                       name: NSNotification.Name.UIDeviceOrientationDidChange,
+                                                       object: nil)
+            }
+        })
         
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(orientationChanged(_:)),
-                                               name: NSNotification.Name.UIDeviceOrientationDidChange,
-                                               object: nil)
+        // Check if the access to the Photos album is granted
+        PhotoLibraryAuthorizaton.checkPhotoLibraryAuthorization({ granted in
+            if granted {
+                NotificationCenter.default.addObserver(self,
+                                                       selector: #selector(self.updateThumbnailOfShowPhotosButton),
+                                                       name: fetchResultChangedNotification,
+                                                       object: nil)
+            }
+        })
         
         // Styling the shutterBtn
         shutterBtn.layer.borderColor = UIColor.black.cgColor
         shutterBtn.layer.borderWidth = 2
         shutterBtn.layer.cornerRadius = min(shutterBtn.frame.width, shutterBtn.frame.height) / 2
-        
-        cameraController.prepare()
-        cameraController.displayPreview(on: preview)
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        updateThumbnailOfShowPhotosButton()
+
+        self.updateThumbnailOfShowPhotosButton()
         
         // Using a 3r-party lib to have control over of the volume button to use it as a shutter button
         self.volumeHandler = JPSVolumeButtonHandler(up: {
@@ -64,10 +80,18 @@ class CameraViewController: UIViewController {
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-
-        if !locationAuthorization.isLocationServicesEnabled {
-            locationAuthorization.enableBasicLocationServices()
-        }
+        CameraAuthorization.checkCameraAuthorization({ authorized in
+            if !authorized {
+                let alert = UIAlertAction(title: "Sorry about that 😕",
+                                          style: .default,
+                                          handler: nil)
+                let alertController = UIAlertController(title: "Access denied",
+                                                        message: "You need to authorize DepthCamera to access the Camera in the Settings App.",
+                                                        preferredStyle: .alert)
+                alertController.addAction(alert)
+                self.present(alertController, animated: true, completion: nil)
+            }
+        })
     }
     
     override func viewDidDisappear(_ animated: Bool) {
@@ -94,8 +118,13 @@ class CameraViewController: UIViewController {
         self.cameraController.captureImage()
     }
     
-    // add a thumbnail to the showPhotos button
+    // Update the background image of the showPhotosButton:
     @objc private func updateThumbnailOfShowPhotosButton() {
+        
+        // * If there are no photos containing DepthData (or the access to the Photos album is not granted):
+        //      the buttom is disabled and it uses a default image as background
+        // * Use the thumbnail of the last image as background for the button
+        
         if let asset = photos.result?.lastObject {
             let thumb = PhotosCollection.getAssetThumbnail(asset)
             showPhotos.setBackgroundImage(thumb, for: .normal)
@@ -127,7 +156,35 @@ class CameraViewController: UIViewController {
                 self.preview.layer.opacity = 1
             }
         }
-        captureImage()
+        
+        CameraAuthorization.checkCameraAuthorization({ cameraAuthorized in
+            PhotoLibraryAuthorizaton.checkPhotoLibraryAuthorization({ photosAuthorized in
+                let alert = UIAlertAction(title: "Sorry about that 😕",
+                                          style: .default,
+                                          handler: nil)
+                var alertController: UIAlertController?
+                let title = "Access denied"
+                
+                if !cameraAuthorized {
+                    alertController = UIAlertController(title: title,
+                                                            message: "You need to authorize DepthCamera to access the Camera in the Settings App.",
+                                                            preferredStyle: .alert)
+                }
+                if !photosAuthorized {
+                    alertController = UIAlertController(title: title,
+                                                            message: "You need to authorize DepthCamera to access Photos album in the Settings App.",
+                                                            preferredStyle: .alert)
+                }
+                if alertController != nil {
+                    alertController?.addAction(alert)
+                    self.present(alertController!, animated: true, completion: nil)
+                }
+                
+                if cameraAuthorized && photosAuthorized {
+                    self.captureImage()
+                }
+            })
+        })
     }
     
 }
