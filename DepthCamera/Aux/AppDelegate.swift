@@ -29,13 +29,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        locationManager.startReceivingLocationChanges()
+        if locationManager.isLocationSerivcesEnabled {
+            locationManager.startReceivingLocationChanges()
+        }
     }
 
-    func applicationWillTerminate(_ application: UIApplication) {        
-        locationManager.stopReicivingLocationChanges()
+    func applicationWillTerminate(_ application: UIApplication) {
+        if locationManager.isLocationSerivcesEnabled {
+            locationManager.stopReicivingLocationChanges()
+        }
     }
-
 
 }
 
