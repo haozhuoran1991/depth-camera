@@ -22,18 +22,24 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
-        locationManager.stopReicivingLocationChanges()
+        if locationManager.isLocationSerivcesEnabled {
+            locationManager.stopReicivingLocationChanges()
+        }
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        locationManager.startReceivingLocationChanges()
+        if locationManager.isLocationSerivcesEnabled {
+            locationManager.startReceivingLocationChanges()
+        }
     }
 
     func applicationWillTerminate(_ application: UIApplication) {        
-        locationManager.stopReicivingLocationChanges()
+        if locationManager.isLocationSerivcesEnabled {
+            locationManager.stopReicivingLocationChanges()
+        }
     }
 
 
