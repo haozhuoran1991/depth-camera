@@ -11,6 +11,10 @@ import AVFoundation
 import Photos
 
 class CameraViewController: UIViewController {
+    
+    enum AuthorizationStatus {
+        case notDetermined, restricted, denied, authorized
+    }
 
     // MARK: IBOutlets
     @IBOutlet fileprivate weak var preview: UIView!
@@ -25,34 +29,64 @@ class CameraViewController: UIViewController {
     private var focusSquare: CameraFocusSquare?
     private var volumeHandler: JPSVolumeButtonHandler?
     private let photos = PhotosCollection()
+    private var status: AuthorizationStatus = .notDetermined
     
     // MARK: - View Controller Life cycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(updateThumbnailOfShowPhotosButton),
-                                               name: fetchResultChangedNotification,
-                                               object: nil)
-        
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(orientationChanged(_:)),
-                                               name: NSNotification.Name.UIDeviceOrientationDidChange,
-                                               object: nil)
         
         // Styling the shutterBtn
         shutterBtn.layer.borderColor = UIColor.black.cgColor
         shutterBtn.layer.borderWidth = 2
         shutterBtn.layer.cornerRadius = min(shutterBtn.frame.width, shutterBtn.frame.height) / 2
         
-        cameraController.prepare()
-        cameraController.displayPreview(on: preview)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(updateThumbnailOfShowPhotosButton),
+                                               name: fetchResultChangedNotification,
+                                               object: nil)
+        
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .notDetermined:
+            // First time the app runs the status will be notDetermined
+            status = .notDetermined
+            AVCaptureDevice.requestAccess(for: .video, completionHandler: { result in
+                switch result {
+                case true:
+                    self.status = .authorized
+                    NotificationCenter.default.addObserver(self,
+                                                           selector: #selector(self.orientationChanged(_:)),
+                                                           name: NSNotification.Name.UIDeviceOrientationDidChange,
+                                                           object: nil)
+                    
+                    self.cameraController.prepare()
+                    DispatchQueue.main.async {
+                        self.cameraController.displayPreview(on: self.preview)
+                    }
+                case false:
+                    self.status = .denied
+                }
+            })
+        case .restricted:
+            status = .restricted
+        case .denied:
+            status = .denied
+        case .authorized:
+            status = .authorized
+            NotificationCenter.default.addObserver(self,
+                                                   selector: #selector(orientationChanged(_:)),
+                                                   name: NSNotification.Name.UIDeviceOrientationDidChange,
+                                                   object: nil)
+            
+            cameraController.prepare()
+            cameraController.displayPreview(on: preview)
+        }
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         updateThumbnailOfShowPhotosButton()
-        
+
         // Using a 3r-party lib to have control over of the volume button to use it as a shutter button
         self.volumeHandler = JPSVolumeButtonHandler(up: {
             self.captureImage()
@@ -64,6 +98,20 @@ class CameraViewController: UIViewController {
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        
+        switch status {
+        case .denied:
+            let alertController = UIAlertController(title: "DepthCamera",
+                                                    message: "DepthCamera doesn't have permission to use the camera, please change privacy settings",
+                                                    preferredStyle: .alert)
+            alertController.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
+            alertController.addAction(UIAlertAction(title: "Settings", style: .default, handler: { _ in
+                UIApplication.shared.open(URL(string: UIApplicationOpenSettingsURLString)!, options: [:], completionHandler: nil)
+            }))
+            self.present(alertController, animated: true, completion: nil)
+        default:
+            break
+        }
 
         if !locationAuthorization.isLocationServicesEnabled {
             locationAuthorization.enableBasicLocationServices()
