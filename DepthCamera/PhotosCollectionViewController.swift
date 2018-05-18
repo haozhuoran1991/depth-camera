@@ -43,16 +43,17 @@ class PhotosCollection: NSObject {
         PHPhotoLibrary.shared().unregisterChangeObserver(self)
     }
     
-    static func getAssetThumbnail(_ asset: PHAsset) -> UIImage {
+    static func getAssetThumbnail(_ asset: PHAsset, widht: Int, height: Int) -> UIImage {
         let manager = PHImageManager.default()
         let option = PHImageRequestOptions()
+        option.resizeMode = .exact
         var thumbnail = UIImage()
         option.isSynchronous = true
         manager.requestImage(for: asset,
-                             targetSize: CGSize.init(width: 100, height: 100) ,
-                             contentMode: .aspectFit,
+                             targetSize: CGSize.init(width: widht, height: height) ,
+                             contentMode: .aspectFill,
                              options: option,
-                             resultHandler: {result, info in
+                             resultHandler: {result, _ in
                                 thumbnail = result!
                                 
         })
@@ -150,7 +151,7 @@ extension PhotosCollectionViewController {
         
         let asset = photoCollection.result!.object(at: indexPath.row)
         
-        let thumb = PhotosCollection.getAssetThumbnail(asset)
+        let thumb = PhotosCollection.getAssetThumbnail(asset, widht: 100, height: 100)
 
         let imgView = UIImageView(image: thumb)
         cell.insertSubview(imgView, at: 0)

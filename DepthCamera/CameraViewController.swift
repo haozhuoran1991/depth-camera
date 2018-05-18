@@ -145,7 +145,7 @@ class CameraViewController: UIViewController {
     // add a thumbnail to the showPhotos button
     @objc private func updateThumbnailOfShowPhotosButton() {
         if let asset = photos.result?.lastObject {
-            let thumb = PhotosCollection.getAssetThumbnail(asset)
+            let thumb = PhotosCollection.getAssetThumbnail(asset, widht: 50, height: 50)
             showPhotos.setBackgroundImage(thumb, for: .normal)
             showPhotos.isEnabled = true
         } else {
