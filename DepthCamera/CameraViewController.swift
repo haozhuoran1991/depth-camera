@@ -29,7 +29,8 @@ class CameraViewController: UIViewController {
     private var focusSquare: CameraFocusSquare?
     private var volumeHandler: JPSVolumeButtonHandler?
     private let photos = PhotosCollection()
-    private var status: AuthorizationStatus = .notDetermined
+    private var cameraStatus: AuthorizationStatus = .notDetermined
+    private var cameraRollStatus: AuthorizationStatus = .notDetermined
     
     // MARK: - View Controller Life cycle
     override func viewDidLoad() {
@@ -40,19 +41,14 @@ class CameraViewController: UIViewController {
         shutterBtn.layer.borderWidth = 2
         shutterBtn.layer.cornerRadius = min(shutterBtn.frame.width, shutterBtn.frame.height) / 2
         
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(updateThumbnailOfShowPhotosButton),
-                                               name: fetchResultChangedNotification,
-                                               object: nil)
-        
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .notDetermined:
             // First time the app runs the status will be notDetermined
-            status = .notDetermined
+            cameraStatus = .notDetermined
             AVCaptureDevice.requestAccess(for: .video, completionHandler: { result in
                 switch result {
                 case true:
-                    self.status = .authorized
+                    self.cameraStatus = .authorized
                     NotificationCenter.default.addObserver(self,
                                                            selector: #selector(self.orientationChanged(_:)),
                                                            name: NSNotification.Name.UIDeviceOrientationDidChange,
@@ -63,15 +59,15 @@ class CameraViewController: UIViewController {
                         self.cameraController.displayPreview(on: self.preview)
                     }
                 case false:
-                    self.status = .denied
+                    self.cameraStatus = .denied
                 }
             })
         case .restricted:
-            status = .restricted
+            cameraStatus = .restricted
         case .denied:
-            status = .denied
+            cameraStatus = .denied
         case .authorized:
-            status = .authorized
+            cameraStatus = .authorized
             NotificationCenter.default.addObserver(self,
                                                    selector: #selector(orientationChanged(_:)),
                                                    name: NSNotification.Name.UIDeviceOrientationDidChange,
@@ -81,11 +77,32 @@ class CameraViewController: UIViewController {
             cameraController.displayPreview(on: preview)
         }
         
+        switch PHPhotoLibrary.authorizationStatus() {
+        case .notDetermined:
+            cameraRollStatus = .notDetermined
+        case .restricted:
+            cameraRollStatus = .restricted
+        case .denied:
+            cameraRollStatus = .denied
+        case .authorized:
+            cameraRollStatus = .authorized
+            NotificationCenter.default.addObserver(self,
+                                                   selector: #selector(updateThumbnailOfShowPhotosButton),
+                                                   name: fetchResultChangedNotification,
+                                                   object: nil)
+        }
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        updateThumbnailOfShowPhotosButton()
+        
+        switch cameraRollStatus {
+        case .authorized:
+            updateThumbnailOfShowPhotosButton()
+        default:
+            break
+        }
 
         // Using a 3r-party lib to have control over of the volume button to use it as a shutter button
         self.volumeHandler = JPSVolumeButtonHandler(up: {
@@ -99,11 +116,24 @@ class CameraViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        switch status {
+        switch cameraStatus {
         case .denied:
             let alertController = UIAlertController(title: "DepthCamera",
                                                     message: "DepthCamera doesn't have permission to use the camera, please change privacy settings",
                                                     preferredStyle: .alert)
+            alertController.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
+            alertController.addAction(UIAlertAction(title: "Settings", style: .default, handler: { _ in
+                UIApplication.shared.open(URL(string: UIApplicationOpenSettingsURLString)!, options: [:], completionHandler: nil)
+            }))
+            self.present(alertController, animated: true, completion: nil)
+        default:
+            break
+        }
+        
+        switch cameraRollStatus {
+        case .denied:
+            let alertController = UIAlertController(title: "DepthCamera",
+                                                    message: "DepthCamera doesn't have permission to access the Photos, please change privacy settings", preferredStyle: .alert)
             alertController.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
             alertController.addAction(UIAlertAction(title: "Settings", style: .default, handler: { _ in
                 UIApplication.shared.open(URL(string: UIApplicationOpenSettingsURLString)!, options: [:], completionHandler: nil)
