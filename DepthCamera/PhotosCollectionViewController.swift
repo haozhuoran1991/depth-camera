@@ -70,7 +70,7 @@ class PhotosCollection: NSObject {
         requestOptions.isSynchronous = true
         
         // NOTE:
-        // requestOptions.version = .original or unadjusted return the original heic file, ignoring any edition
+        // requestOptions.version = .original or unadjusted return the original file, ignoring any edition
         // requestOptions.version = .current return a jpeg file in the current state
         
         manager.requestImageData(for: asset, options: requestOptions, resultHandler: {imgData, dataUTI, imgOrientation, info  in
